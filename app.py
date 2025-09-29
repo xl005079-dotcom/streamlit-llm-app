@@ -1,14 +1,68 @@
 
-from dotenv import load_dotenv
-load_dotenv()
-
+import os
 import streamlit as st
 from langchain_openai import ChatOpenAI
 from langchain.schema import SystemMessage, HumanMessage
 import re
 
+# 環境変数の読み込み（ローカル開発用のみ）
+def load_env_if_available():
+    """dotenvが利用可能な場合のみ.envファイルを読み込む"""
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()  # 現在のディレクトリ
+        load_dotenv('.env')  # 明示的に.envファイル指定
+        load_dotenv('streamlit-llm-app/.env')  # サブディレクトリも確認
+        return True
+    except (ImportError, Exception):
+        # dotenvが利用できない場合（Streamlit Cloudなど）はスキップ
+        return False
+
+# 環境変数読み込み実行
+env_loaded = load_env_if_available()
+
+# OpenAI APIキーの確認
+def get_openai_api_key():
+    """複数のソースからOpenAI APIキーを取得"""
+    # 1. 環境変数から取得
+    api_key = os.getenv("OPENAI_API_KEY")
+    if api_key:
+        return api_key, "環境変数"
+    
+    # 2. Streamlit Secretsから取得
+    try:
+        api_key = st.secrets["OPENAI_API_KEY"]
+        if api_key:
+            return api_key, "Streamlit Secrets"
+    except (KeyError, FileNotFoundError):
+        pass
+    
+    return None, None
+
+openai_api_key, source = get_openai_api_key()
+
+if not openai_api_key:
+    st.error("⚠️ OpenAI APIキーが設定されていません。")
+    st.error("**Streamlit Cloudをご利用の場合:**")
+    st.code("1. アプリの管理画面で 'Settings' > 'Secrets' を開く")
+    st.code("2. 以下を追加: OPENAI_API_KEY = \"your_actual_api_key\"")
+    
+    st.error("**ローカル開発の場合:**")
+    st.code("1. .envファイル: OPENAI_API_KEY=your_key")
+    st.code("2. 環境変数: set OPENAI_API_KEY=your_key")
+    st.stop()
+
+
 # LLMの初期化
-llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
+try:
+    llm = ChatOpenAI(
+        model_name="gpt-4o-mini", 
+        temperature=0,
+        openai_api_key=openai_api_key
+    )
+except Exception as e:
+    st.error(f"❌ LLMの初期化に失敗しました: {str(e)}")
+    st.stop()
 
 # カテゴリー設定
 CATEGORIES = {

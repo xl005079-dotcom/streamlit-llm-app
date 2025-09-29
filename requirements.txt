@@ -40,3 +40,12 @@ typing_extensions==4.15.0
 tzdata==2025.2
 urllib3==2.5.0
 watchdog==6.0.0
+
+# LangChain and AI packages
+python-dotenv==1.1.1
+langchain==0.3.27
+langchain-openai==0.3.33
+openai==1.109.1
+langchain-core==0.3.76
+pydantic==2.11.9
+tiktoken==0.11.0
